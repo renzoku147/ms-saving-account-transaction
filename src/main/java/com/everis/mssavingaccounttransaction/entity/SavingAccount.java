@@ -1,7 +1,9 @@
 package com.everis.mssavingaccounttransaction.entity;
 
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,9 +20,15 @@ public class SavingAccount {
 
     private List<Person> signers;
 
+    private Integer limitTransactions;
+
+    private Integer freeTransactions;
+
+    private Double commissionTransactions;
+
     private Double balance;
 
-    private Integer limitMovements;
+    private Double minAverageVip;
 
     private LocalDateTime date;
 }

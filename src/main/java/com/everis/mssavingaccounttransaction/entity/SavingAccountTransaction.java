@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
@@ -22,6 +23,7 @@ public class SavingAccountTransaction {
 
     private SavingAccount savingAccount;
 
+    @NotBlank
     private String transactionCode;
 
     @Valid
@@ -30,7 +32,8 @@ public class SavingAccountTransaction {
     @NotNull
     private Double transactionAmount;
 
-    @NotNull
+    private Double commissionAmount;
+
     private LocalDateTime transactionDateTime;
 
 

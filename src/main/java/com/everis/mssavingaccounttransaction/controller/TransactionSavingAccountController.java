@@ -22,8 +22,6 @@ public class TransactionSavingAccountController {
     @Autowired
     SavingAccountTransactionService savingAccountTransactionService;
 
-    WebClient webClient = WebClient.create("http://localhost:8021/savingAccount");
-
     @GetMapping("list")
     public Flux<SavingAccountTransaction> findAll(){
         return savingAccountTransactionService.findAll();
@@ -36,37 +34,31 @@ public class TransactionSavingAccountController {
 
     @PostMapping("/create")
     public Mono<ResponseEntity<SavingAccountTransaction>> create(@RequestBody SavingAccountTransaction savingAccountTransaction){
-       Mono<SavingAccount> savingAccount = webClient.get().uri("/find/{id}", savingAccountTransaction.getSavingAccount().getId())
-                                            .accept(MediaType.APPLICATION_JSON)
-                                            .retrieve()
-                                            .bodyToMono(SavingAccount.class); // Limite Movimientos
 
        return savingAccountTransactionService.countMovements(savingAccountTransaction.getSavingAccount().getId()) // N° Movimientos actuales
                .flatMap(cnt -> {
-                   return savingAccount
-                           .filter(sa -> sa.getLimitMovements() > cnt)
+                   return savingAccountTransactionService.findSavingAccountById(savingAccountTransaction.getSavingAccount().getId()) // Cuenta Bancaria
+                           .filter(sa -> sa.getLimitTransactions() > cnt)
                            .flatMap(sa -> {
                                switch (savingAccountTransaction.getTypeTransaction()){
-                                   case DEPOSIT: sa.setBalance(sa.getBalance() + savingAccountTransaction.getTransactionAmount());
-                                                return webClient.put().uri("/update", sa.getId())
-                                                   .accept(MediaType.APPLICATION_JSON)
-                                                   .syncBody(sa)
-                                                   .retrieve()
-                                                   .bodyToMono(SavingAccount.class);
-                                   case DRAFT: sa.setBalance(sa.getBalance() - savingAccountTransaction.getTransactionAmount());
-                                               return webClient.put().uri("/update", sa.getId())
-                                                       .accept(MediaType.APPLICATION_JSON)
-                                                       .syncBody(sa)
-                                                       .retrieve()
-                                                       .bodyToMono(SavingAccount.class);
-                                   default: return Mono.empty();
+                                   case DEPOSIT: sa.setBalance(sa.getBalance() + savingAccountTransaction.getTransactionAmount()); break;
+                                   case DRAFT: sa.setBalance(sa.getBalance() - savingAccountTransaction.getTransactionAmount()); break;
                                }
+                               if(cnt >= sa.getFreeTransactions() ){
+                                   sa.setBalance(sa.getBalance() - sa.getCommissionTransactions());
+                                   savingAccountTransaction.setCommissionAmount(sa.getCommissionTransactions());
+                               }else{
+                                   savingAccountTransaction.setCommissionAmount(0.0);
+                               }
+
+                               return savingAccountTransactionService.updateSavingAccount(sa)
+                                       .flatMap(saveAcc -> {
+                                           savingAccountTransaction.setSavingAccount(saveAcc);
+                                           savingAccountTransaction.setTransactionDateTime(LocalDateTime.now());
+                                           return savingAccountTransactionService.create(savingAccountTransaction);
+                                       });
                            })
-                           .flatMap(sa -> {
-                               savingAccountTransaction.setSavingAccount(sa);
-                               savingAccountTransaction.setTransactionDateTime(LocalDateTime.now());
-                               return savingAccountTransactionService.create(savingAccountTransaction);
-                           })
+
                            .map(sat ->new ResponseEntity<>(sat , HttpStatus.CREATED) );
                })
                .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
@@ -81,38 +73,31 @@ public class TransactionSavingAccountController {
 
     @PutMapping("/update")
     public Mono<ResponseEntity<SavingAccountTransaction>> update(@RequestBody SavingAccountTransaction transaction) {
-        Mono<SavingAccount> savingAccount = webClient.get().uri("/find/{id}", transaction.getSavingAccount().getId())
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(SavingAccount.class); // Limite Movimientos
+//        Mono<SavingAccount> savingAccount = webClient.get().uri("/find/{id}", transaction.getSavingAccount().getId())
+//                .accept(MediaType.APPLICATION_JSON)
+//                .retrieve()
+//                .bodyToMono(SavingAccount.class); // Limite Movimientos
 
-        return savingAccount
+        return savingAccountTransactionService.findSavingAccountById(transaction.getSavingAccount().getId())
                 .flatMap(sa -> {
                     return savingAccountTransactionService.findById(transaction.getId())
                             .flatMap(sat -> {
                                 switch (transaction.getTypeTransaction()){
                                     case DEPOSIT: sa.setBalance(sa.getBalance() - sat.getTransactionAmount() + transaction.getTransactionAmount());
-                                        return webClient.put().uri("/update", sa.getId())
-                                                .accept(MediaType.APPLICATION_JSON)
-                                                .syncBody(sa)
-                                                .retrieve()
-                                                .bodyToMono(SavingAccount.class).flatMap(saUpdate -> {
+                                        return savingAccountTransactionService.updateSavingAccount(sa).flatMap(saUpdate -> {
                                                                                             transaction.setSavingAccount(saUpdate);
                                                                                             transaction.setTransactionDateTime(LocalDateTime.now());
                                                                                             return savingAccountTransactionService.update(transaction);
                                                                                         });
                                     case DRAFT: sa.setBalance(sa.getBalance() + sat.getTransactionAmount() - transaction.getTransactionAmount());
-                                        return webClient.put().uri("/update", sa.getId())
-                                                .accept(MediaType.APPLICATION_JSON)
-                                                .syncBody(sa)
-                                                .retrieve()
-                                                .bodyToMono(SavingAccount.class).flatMap(saUpdate -> {
+                                        return savingAccountTransactionService.updateSavingAccount(sa).flatMap(saUpdate -> {
                                                                                                 transaction.setSavingAccount(saUpdate);
                                                                                                 transaction.setTransactionDateTime(LocalDateTime.now());
                                                                                                 return savingAccountTransactionService.update(transaction);
                                                                                             });
                                     default: return Mono.empty();
-                                } // Mono<SavingAccount>
+                                }
+
                             });
                 })
                 .map(sat ->new ResponseEntity<>(sat , HttpStatus.CREATED))

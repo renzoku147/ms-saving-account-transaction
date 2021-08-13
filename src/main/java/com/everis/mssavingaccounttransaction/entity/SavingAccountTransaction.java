@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -21,12 +20,13 @@ public class SavingAccountTransaction {
     @Id
     private String id;
 
+    @NotNull
     private SavingAccount savingAccount;
 
     @NotBlank
     private String transactionCode;
 
-    @Valid
+    @NotNull
     private TypeTransaction typeTransaction;
 
     @NotNull

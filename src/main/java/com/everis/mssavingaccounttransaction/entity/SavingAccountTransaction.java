@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-@Document("savingAccountTransaction")
+@Document("SavingAccountTransaction")
 @AllArgsConstructor
 @NoArgsConstructor
 public class SavingAccountTransaction {

@@ -73,10 +73,6 @@ public class TransactionSavingAccountController {
 
     @PutMapping("/update")
     public Mono<ResponseEntity<SavingAccountTransaction>> update(@RequestBody SavingAccountTransaction transaction) {
-//        Mono<SavingAccount> savingAccount = webClient.get().uri("/find/{id}", transaction.getSavingAccount().getId())
-//                .accept(MediaType.APPLICATION_JSON)
-//                .retrieve()
-//                .bodyToMono(SavingAccount.class); // Limite Movimientos
 
         return savingAccountTransactionService.findSavingAccountById(transaction.getSavingAccount().getId())
                 .flatMap(sa -> {

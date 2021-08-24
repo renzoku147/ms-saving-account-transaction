@@ -68,5 +68,10 @@ public class TransactionCtaAhorroServiceImpl implements SavingAccountTransaction
                 .bodyToMono(SavingAccount.class);
     }
 
+    @Override
+    public Flux<SavingAccountTransaction> findBySavingAccountCardNumber(String cardNumber) {
+        return savingAccountTransactionRepository.findBySavingAccountCardNumber(cardNumber);
+    }
+
 
 }

@@ -5,6 +5,7 @@ import com.everis.mssavingaccounttransaction.entity.SavingAccountTransaction;
 import com.everis.mssavingaccounttransaction.service.SavingAccountTransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @RestController
@@ -30,6 +32,21 @@ public class TransactionSavingAccountController {
     @GetMapping("/find/{id}")
     public Mono<SavingAccountTransaction> findById(@PathVariable String id){
         return savingAccountTransactionService.findById(id);
+    }
+
+    @GetMapping("/checkAllTransactions/{numberCard}")
+    public Flux<SavingAccountTransaction> findAllTransactions(@PathVariable String numberCard){
+        return savingAccountTransactionService.findBySavingAccountCardNumber(numberCard);
+    }
+
+    @GetMapping("/checkAllCommissions/{numberCard}/{from}/{to}")
+    public Flux<SavingAccountTransaction> findAllCommissions(@PathVariable String numberCard,
+                                                              @PathVariable(name = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                                              @PathVariable(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to){
+        return savingAccountTransactionService.findBySavingAccountCardNumber(numberCard)
+                .filter(ft -> ft.getTransactionDateTime().toLocalDate().isAfter(from)
+                        && ft.getTransactionDateTime().toLocalDate().isBefore(to)
+                        && ft.getCommissionAmount() > 0);
     }
 
     @PostMapping("/create")

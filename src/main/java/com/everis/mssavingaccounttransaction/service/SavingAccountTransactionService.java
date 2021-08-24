@@ -21,4 +21,6 @@ public interface SavingAccountTransactionService {
     Mono<SavingAccount> findSavingAccountById(String id);
 
     Mono<SavingAccount> updateSavingAccount(SavingAccount sa);
+
+    Flux<SavingAccountTransaction> findBySavingAccountCardNumber(String cardNumber);
 }

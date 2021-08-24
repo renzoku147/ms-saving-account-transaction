@@ -7,5 +7,7 @@ import reactor.core.publisher.Flux;
 public interface SavingAccountTransactionRepository extends ReactiveMongoRepository<SavingAccountTransaction, String> {
 
     Flux<SavingAccountTransaction> findBySavingAccountId(String id);
+
+    Flux<SavingAccountTransaction> findBySavingAccountCardNumber(String cardNumber);
 }
 
